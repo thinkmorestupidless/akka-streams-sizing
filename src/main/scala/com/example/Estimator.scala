@@ -12,6 +12,7 @@ import akka.stream._
 import com.example.Estimator.decider
 import com.lightbend.cinnamon.akka.stream.CinnamonAttributes.SourceWithInstrumented
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -33,12 +34,14 @@ object Estimator extends App {
   implicit val executionContext = system.dispatcher
 
   val config = ConfigFactory.load()
+  val cLogger = Logger("console")
+  val pLogger = Logger("stats")
 
   val parallelism = config.getInt("estimator.parallelism")
   val url = config.getString("estimator.url")
   val timeout = config.getLong("estimator.timeout")
 
-  println(s"parallelism = $parallelism, url = $url, timeout = $timeout")
+  cLogger.info(s"parallelism = $parallelism, url = $url, timeout = $timeout")
 
   case class CallStage(stage: Int, in: Long, out: Long, response: String)
 
@@ -101,7 +104,7 @@ object Estimator extends App {
       .mapAsync(parallelism)(callRemoteService)
       .mapAsync(parallelism)(callRemoteService)
       .mapAsync(parallelism)(callRemoteService)
-      .instrumentedRunWith(Sink.foreach(w => println(s"completed ${w.stages.size} stages in ${System.currentTimeMillis() - w.createdAt}ms")))(name = "my-stream")
+      .instrumentedRunWith(Sink.foreach(w => pLogger.debug(s"completed ${w.stages.size} stages in ${System.currentTimeMillis() - w.createdAt}ms")))(name = "my-stream")
   }
 
   def customGraph() = {
@@ -139,9 +142,9 @@ object Estimator extends App {
   singleStream().onComplete(r => {
     r match {
       case Success(_) =>
-        println(s"Stream completed successfully")
+        cLogger.info(s"Stream completed successfully")
       case Failure(e) =>
-        println(s"Stream failed with error :$e")
+        cLogger.error(s"Stream failed with error :$e")
     }
     System.exit(0)
   })

@@ -11,13 +11,16 @@ lazy val root = (project in file(".") enablePlugins (Cinnamon, JavaAppPackaging)
     cinnamon in run := true,
     cinnamon in test := true,
     libraryDependencies ++= Seq(
-      Cinnamon.library.cinnamonCHMetrics,
+      Cinnamon.library.cinnamonPrometheus,
+      Cinnamon.library.cinnamonPrometheusHttpServer,
       Cinnamon.library.cinnamonAkkaStream,
       Cinnamon.library.cinnamonAkkaHttp,
       "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-xml"        % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-stream"          % akkaVersion,
+      "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2",
+      "ch.qos.logback"             %  "logback-classic" % "1.2.3",
 
       "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
