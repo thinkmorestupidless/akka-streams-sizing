@@ -1,6 +1,13 @@
 lazy val akkaHttpVersion = "10.1.8"
 lazy val akkaVersion    = "2.6.0-M2"
 
+javaOptions in Universal ++= Seq(
+  "-J-XX:+UseConcMarkSweepGC",
+  "-J-XX:+ScavengeBeforeFullGC",
+  "-J-XX:+CMSScavengeBeforeRemark",
+  "-Xmx512m",
+  "-Xms512m")
+
 lazy val root = (project in file(".") enablePlugins (Cinnamon, JavaAppPackaging)).
   settings(
     inThisBuild(List(
