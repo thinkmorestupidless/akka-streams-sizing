@@ -8,20 +8,28 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{ Balance, Flow, GraphDSL, Merge, Sink, Source }
-import akka.stream.{ ActorMaterializer, FlowShape }
+import akka.stream._
+import com.example.Estimator.decider
 import com.lightbend.cinnamon.akka.stream.CinnamonAttributes.SourceWithInstrumented
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Random
+import scala.util.{ Failure, Random, Success }
 
 object Estimator extends App {
 
   val SourceListSize = 100
+  val decider: Supervision.Decider = {
+    case _: StreamTcpException => {
+      println("StreamTcpException received, restarting operation")
+      Supervision.Restart
+    }
+    case _ => Supervision.Stop
+  }
 
   implicit val system = ActorSystem("Estimate")
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withSupervisionStrategy(decider))
   implicit val executionContext = system.dispatcher
 
   val config = ConfigFactory.load()
@@ -128,7 +136,15 @@ object Estimator extends App {
   /**
    * Calls an HTTP endpoint
    */
-  singleStream()
+  singleStream().onComplete(r => {
+    r match {
+      case Success(_) =>
+        println(s"Stream completed successfully")
+      case Failure(e) =>
+        println(s"Stream failed with error :$e")
+    }
+    System.exit(0)
+  })
 
   /**
    * Using a custom graph stage to fan-out/fan-in
